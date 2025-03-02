@@ -1,15 +1,15 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
     throw new Error("Please define the MongoDB URI in the .env file");
 }
 
-let cached = global.mongoose;
+let cached = globalThis.mongoose;
 
 if (!cached) {
-    cached = global.mongoose = { conn: null, promise: null };
+    cached = globalThis.mongoose = { conn: null, promise: null };
 }
 
 export async function connectToDatabase() {
@@ -23,7 +23,12 @@ export async function connectToDatabase() {
             maxPoolSize: 10,
         };
 
-        cached.promise = mongoose.connect(MONGODB_URI, opts).then(() => mongoose.connection);
+        cached.promise = mongoose.connect(MONGODB_URI, opts)
+            .then(() => mongoose.connection)
+            .catch((err) => {
+                console.error('MongoDB connection error:', err);
+                throw new Error('Failed to connect to MongoDB');
+            });
     }
 
     cached.conn = await cached.promise;
